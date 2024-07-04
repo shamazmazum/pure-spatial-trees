@@ -14,6 +14,12 @@ jobs:
       - name: Install Ultralisp
         run: |
           ros -e '(ql-dist:install-dist "http://dist.ultralisp.org/" :prompt nil)'
+      - name: Get ASDF
+        run: |
+          wget https://common-lisp.net/project/asdf/archives/asdf.lisp
+          cp asdf.lisp $HOME/.roswell/lisp/quicklisp
+          sed -i.bak -e 's/(try (require "asdf"))// ' $HOME/.roswell/lisp/quicklisp/setup.lisp
       - name: Run tests
         run: |
+          ros -l $GITHUB_WORKSPACE/tests/ci.lisp
           ros -l $GITHUB_WORKSPACE/tests/ci.lisp
