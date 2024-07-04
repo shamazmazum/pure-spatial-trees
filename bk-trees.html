@@ -190,14 +190,38 @@ CL-USER&gt;
 </code></pre><p>   </p><h1 id="api">API</h1>
      All functions are found in <code>pure-spatial-trees/bk</code> package.
      
-       <div class="codex-error codex-no-node">No node with name <code>insert</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>delete</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>nearest-neighbors</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>nearest-neighbor</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>items-in-ball</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>belongs-to-set-p</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>flatten</code>.</div>
-       <div class="codex-error codex-no-node">No node with name <code>trees-equal-p</code>.</div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">insert</code><code class="codex-lambda-list">(tree obj distance)</code><div class="codex-docstring">Insert a new object in the tree. An empty tree is designated by
+<code>nil</code>. This operation does not modify its arguments and returns a
+new tree instead. The second value is <code>t</code> if insertion was
+successfull and <code>nil</code> otherwise (when the object is already in the
+tree). An integer-valued metric <code>distance</code> on objects in the tree
+must be supplied.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">delete</code><code class="codex-lambda-list">(tree obj distance)</code><div class="codex-docstring"><p>Delete an object from the tree. An empty tree is designated by
+<code>nil</code>. This operation does not modify its arguments and returns a
+new tree instead. The second value is <code>t</code> if deletion was
+successfull and <code>nil</code> otherwise (when the object is absent from the
+tree). An integer-valued metric <code>distance</code> on objects in the tree
+must be supplied. It must be the same metric as the one used during
+creation of the tree.</p><p>NB: BK-trees <b>do not support deletion</b> of the root node. To overcome
+this restriction and for the sake of code uniformity, a node
+corresponding to <code>obj</code> is not really deleted, but is
+&quot;shadowed&quot;. If you really need to delete it permanently, you need to
+rebuild the tree using <code>faltten</code> and <code>insert</code>. Patches for removal
+of non-root nodes are welcome.</p></div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">nearest-neighbors</code><code class="codex-lambda-list">(tree obj distance)</code><div class="codex-docstring">Find all elements in the tree which have the least distance to
+<code>obj</code> according to an integer-valued metric. The second returned
+value is that distance. The metric must be the same as the one used
+during creation of the tree.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">nearest-neighbor</code><code class="codex-lambda-list">(tree obj distance)</code><div class="codex-docstring">Like <code>nearest-neighbors</code>, but returns only one (arbitrary)
+element and is faster.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">items-in-ball</code><code class="codex-lambda-list">(tree obj dist distance)</code><div class="codex-docstring">Return a list of elements from the tree whose distance to <code>obj</code>
+is less or equal to <code>dist</code> according to an integer-valued metric
+<code>distance</code>. It must be the same metric as the one used during
+creation of the tree.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">belongs-to-set-p</code><code class="codex-lambda-list">(tree elem distance)</code><div class="codex-docstring">Test if <code>elem</code> belongs to the tree. <code>distance</code> must be the same
+metric as the one used during creation of the tree.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">flatten</code><code class="codex-lambda-list">(tree)</code><div class="codex-docstring">Return all elements of the tree as a list.</div></div>
+       <div class="codex-doc-node codex-operator codex-function"><code class="codex-name">trees-equal-p</code><code class="codex-lambda-list">(t1 t2 &amp;key (test (function equalp)))</code><div class="codex-docstring">Test if two trees are equal.</div></div>
      
    <p>
 </p>
