@@ -1,0 +1,181 @@
+@begin[ref=index](section)
+   @title(Overview)
+   @c(pure-spatial-trees) is (will be, actually) a collection of utilities for
+   working with spatial trees inside functional paradigm. The "functional
+   paradigm" means that any tree operation doesn't change its input.
+
+   Each kind of trees has its own package and a section in the manual.
+@end(section)
+
+@begin(section)
+   @title(BK-trees)
+   BK-trees are trees for metric spaces with integral metric. They allow the
+   following queries (sorted from the fastest queries to the slowest):
+   @begin(list)
+     @item(Set membership test: Does an object belong to the tree?)
+     @item(Searching for objects which are close enough to the specified
+   object.)
+     @item(Searching for the nearest neighbor(s).)
+   @end(list)
+
+   Difference from @link[uri=https://github.com/vy/bk-tree](bk-tree):
+   @begin(list)
+     @item(bk-tree is not tested.)
+     @item(bk-tree produces wrong results (check bk-tree.lisp, line 145).)
+     @item(bk-tree modifies its arguments.)
+   @end(list)
+
+   Here is an example for five-dimensional space with integer coordinates and
+   Manhattan distance:
+@begin[lang=lisp](code)
+(defpackage bk-example
+  (:use #:cl)
+  (:local-nicknames (#:sera #:serapeum)
+                    (#:alex #:alexandria)
+                    (#:bk   #:pure-spatial-trees/bk))
+  (:export #:distance
+           #:make-tree
+           #:random-vector
+           #:random-list
+
+           #:items-in-ball))
+(in-package :bk-example)
+
+(sera:-> distance ((simple-array fixnum (*))
+                   (simple-array fixnum (*)))
+         (values alex:non-negative-fixnum &optional))
+(defun distance (v1 v2)
+  "Calculate Manhattan distance between two vectors."
+  (declare (optimize (speed 3)))
+  (let ((v (map '(vector fixnum)
+                (lambda (x y) (abs (- x y)))
+                v1 v2)))
+    (declare (dynamic-extent v))
+    (reduce #'+ v)))
+
+(sera:-> random-vector (alex:positive-fixnum
+                        alex:positive-fixnum)
+         (values (simple-array fixnum (*)) &optional))
+(defun random-vector (dim max)
+  "Generate a vector of length DIM with random integer elements in the range
+from 0 to 1000."
+  (make-array dim
+              :element-type 'fixnum
+              :initial-contents (loop repeat dim collect (random max))))
+
+(sera:-> random-list (alex:positive-fixnum
+                      alex:positive-fixnum
+                      alex:positive-fixnum)
+         (values list &optional))
+(defun random-list (n dim max)
+  "Generate a list of N random vectors."
+  (remove-duplicates
+   (loop repeat n collect (random-vector dim max))
+   :test #'equalp))
+
+(sera:-> items-in-ball (list t alex:non-negative-fixnum)
+         (values list &optional))
+(defun items-in-ball (list obj dist)
+  "Naïve O(n) implementation of search for vectors no farther than DIST from OBJ."
+  (declare (optimize (speed 3)))
+  (loop for elem in list
+        for d = (distance obj elem)
+        when (<= d dist) collect elem))
+
+(sera:-> make-tree (list)
+         (values bk:tree &optional))
+(defun make-tree (list)
+  "Make BK tree from a set of vectors with Manhattan distance between them."
+  (reduce (lambda (tree x)
+            (bk:insert tree x #'distance))
+          list :initial-value nil))
+@end(code)
+
+Now try it in the REPL:
+@begin[lang=lisp](code)
+CL-USER> (defparameter *list* (bk-example:random-list 100000 5 1000))
+*LIST*
+CL-USER> (length *list*)
+100000 ; No duplicates
+CL-USER> (time (defparameter *tree* (bk-example:make-tree *list*)))
+Evaluation took:
+  25.026 seconds of real time
+  25.203811 seconds of total run time (25.203609 user, 0.000202 system)
+  [ Real times consist of 0.104 seconds GC time, and 24.922 seconds non-GC time. ]
+  [ Run times consist of 0.283 seconds GC time, and 24.921 seconds non-GC time. ]
+  100.71% CPU
+  95,097,318,836 processor cycles
+  9,688,798,720 bytes consed
+  
+*TREE*
+CL-USER> ;; Naïve appoach
+(time
+ (loop repeat 1000 do
+       (bk-example:items-in-ball *list* (bk-example:random-vector 5 1000) 30)))
+Evaluation took:
+  24.226 seconds of real time
+  24.336622 seconds of total run time (24.336622 user, 0.000000 system)
+  [ Real times consist of 0.059 seconds GC time, and 24.167 seconds non-GC time. ]
+  [ Run times consist of 0.171 seconds GC time, and 24.166 seconds non-GC time. ]
+  100.46% CPU
+  92,059,254,784 processor cycles
+  6,400,403,840 bytes consed
+  
+NIL
+CL-USER> ;; Search with BK-tree
+(time
+ (loop repeat 1000 do
+       (pure-spatial-trees/bk:items-in-ball
+        *tree* (bk-example:random-vector 5 1000) 30 #'bk-example:distance)))
+Evaluation took:
+  1.883 seconds of real time
+  1.883651 seconds of total run time (1.883649 user, 0.000002 system)
+  100.05% CPU
+  7,157,871,786 processor cycles
+  397,533,952 bytes consed
+  
+NIL
+CL-USER> ;; Search with BK-tree (smaller radius)
+(time
+ (loop repeat 1000 do
+       (pure-spatial-trees/bk:items-in-ball
+        *tree* (bk-example:random-vector 5 1000) 10 #'bk-example:distance)))
+Evaluation took:
+  1.056 seconds of real time
+  1.056159 seconds of total run time (1.056156 user, 0.000003 system)
+  100.00% CPU
+  4,013,380,032 processor cycles
+  246,428,800 bytes consed
+  
+NIL
+CL-USER> ;; Membership test
+(time
+ (loop repeat 1000 do
+       (pure-spatial-trees/bk:belongs-to-set-p
+        *tree* (bk-example:random-vector 5 1000) #'bk-example:distance)))
+Evaluation took:
+  0.721 seconds of real time
+  0.721491 seconds of total run time (0.721491 user, 0.000000 system)
+  100.00% CPU
+  2,741,624,874 processor cycles
+  170,752,896 bytes consed
+  
+NIL
+CL-USER> 
+@end(code)
+
+   @begin(section)
+     @title(API)
+     All functions are found in @c(pure-spatial-trees/bk) package.
+     @cl:with-package[name="pure-spatial-trees/bk"](
+       @cl:doc(function insert)
+       @cl:doc(function delete)
+       @cl:doc(function nearest-neighbors)
+       @cl:doc(function nearest-neighbor)
+       @cl:doc(function items-in-ball)
+       @cl:doc(function belongs-to-set-p)
+       @cl:doc(function flatten)
+       @cl:doc(function trees-equal-p)
+     )
+   @end(section)
+@end(section)
