@@ -8,4 +8,4 @@ on Common Lisp.
 Which trees are supported:
 * BK-trees
 
-[https://shamazmazum.github.io/pure-spatial-trees/](Documentation)
+[Documentation](https://shamazmazum.github.io/pure-spatial-trees/)
